@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="calculator">
+        <h1>Calculator</h1>
+
+        <input id="num1" type="number" step="any" placeholder="First number">
+
+        <select id="operation">
+            <option value="add">+</option>
+            <option value="subtract">−</option>
+            <option value="multiply">×</option>
+            <option value="divide">÷</option>
+        </select>
+
+        <input id="num2" type="number" step="any" placeholder="Second number">
+
+        <button onclick="calculate()">Calculate</button>
+
+        <div id="result" class="result">Result will appear here</div>
+    </main>
+
+    <script>
+        const BACKEND_URL = "{{ backend_url }}";
+
+        async function calculate() {
+            const num1 = document.getElementById("num1").value;
+            const num2 = document.getElementById("num2").value;
+            const operation = document.getElementById("operation").value;
+            const resultElement = document.getElementById("result");
+
+            if (num1 === "" || num2 === "") {
+                resultElement.textContent = "Please enter both numbers.";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/calculate`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        num1: num1,
+                        num2: num2,
+                        operation: operation
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    resultElement.textContent = data.error || "Calculation failed";
+                    return;
+                }
+
+                resultElement.textContent = `Result: ${data.result}`;
+            } catch (error) {
+                resultElement.textContent =
+                    "Unable to connect to the backend.";
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

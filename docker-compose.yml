@@ -1,0 +1,14 @@
+services:
+  backend:
+    build: ./backend
+    container_name: calculator-backend
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./frontend
+    container_name: calculator-frontend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - backend
