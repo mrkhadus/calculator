@@ -10,5 +10,7 @@ services:
     container_name: calculator-frontend
     ports:
       - "8000:8000"
+    environment:
+      - BACKEND_URL=http://backend:5001
     depends_on:
       - backend

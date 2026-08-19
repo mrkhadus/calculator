@@ -27,8 +27,6 @@
     </main>
 
     <script>
-        const BACKEND_URL = "{{ backend_url }}";
-
         async function calculate() {
             const num1 = document.getElementById("num1").value;
             const num2 = document.getElementById("num2").value;
@@ -41,7 +39,7 @@
             }
 
             try {
-                const response = await fetch(`${BACKEND_URL}/calculate`, {
+                const response = await fetch("/api/calculate", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
