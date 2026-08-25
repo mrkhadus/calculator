@@ -12,6 +12,7 @@ APP_PATH = pathlib.Path(__file__).parents[2] / "frontend" / "app.py"
 if "requests" not in sys.modules:
     sys.modules["requests"] = types.ModuleType("requests")
     sys.modules["requests"].post = Mock()
+    sys.modules["requests"].RequestException = RuntimeError
 
 
 def load_app():
@@ -73,7 +74,7 @@ class FrontendAppTests(unittest.TestCase):
 
     @patch.object(sys.modules["requests"], "post")
     def test_calculate_returns_error_when_backend_request_fails(self, post):
-        post.side_effect = RuntimeError("backend unavailable")
+        post.side_effect = self.module.requests.RequestException("backend unavailable")
 
         response = self.client.post("/api/calculate", json={"operation": "add"})
 

@@ -20,8 +20,8 @@ def calculate():
             timeout=5
         )
         return response.json(), response.status_code
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except (requests.RequestException, ValueError) as error:
+        return jsonify({"error": str(error)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
