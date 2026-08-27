@@ -17,7 +17,7 @@ spec:
     spec:
       containers: 
       - name: backend-container
-        image: mrkhadus/calculator:backend
+        image: mrkhadus/calculator-backend
         ports:
         - containerPort: 5001
 ---
@@ -40,7 +40,7 @@ spec:
     spec:
       containers:
       - name: frontend-container
-        image: mrkhadus/calculator:frontend
+        image: mrkhadus/calculator-frontend
         env:
           - name: BACKEND_URL
             value: "http://backend-service:5001"

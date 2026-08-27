@@ -1,4 +1,7 @@
 name: Build
+permissions:
+  contents: write
+  pull-requests: write
 on:
   push:
     branches:
@@ -43,3 +46,74 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
+  docker-images:
+    name: Build, scan, and publish Docker images
+    needs: sonarqube
+    runs-on: ubuntu-latest
+    # Pull requests are scanned but never publish images or require Docker Hub credentials.
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Build backend image
+        run: docker build --tag mrkhadus/calculator-backend:${{ github.sha }} ./backend
+
+      - name: Build frontend image
+        run: docker build --tag mrkhadus/calculator-frontend:${{ github.sha }} ./frontend
+
+      - name: Scan backend image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: mrkhadus/calculator-backend:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Scan frontend image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: mrkhadus/calculator-frontend:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push backend image
+        if: github.event_name != 'pull_request'
+        run: docker push mrkhadus/calculator-backend:${{ github.sha }}
+
+      - name: Push frontend image
+        if: github.event_name != 'pull_request'
+        run: docker push mrkhadus/calculator-frontend:${{ github.sha }}
+
+      - name: Update Argo CD image tags
+        if: github.event_name != 'pull_request'
+        run: |
+          sed -i "s|^\([[:space:]]*image:[[:space:]]*\)mrkhadus/calculator-backend[^[:space:]]*|\1mrkhadus/calculator-backend:${{ github.sha }}|" manifest/deployment.yaml
+          sed -i "s|^\([[:space:]]*image:[[:space:]]*\)mrkhadus/calculator-frontend[^[:space:]]*|\1mrkhadus/calculator-frontend:${{ github.sha }}|" manifest/deployment.yaml
+
+      - name: Create pull request for Argo CD
+        if: github.event_name != 'pull_request'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/update-image-tags
+          base: main
+          commit-message: "chore: update image tags to ${{ github.sha }}"
+          title: "chore: update image tags to ${{ github.sha }}"
+          labels: |
+            automated
+            argocd
+            gitops
+          body: |
+            Updates the backend and frontend image tags for Argo CD deployment.
+
+            Source commit: ${{ github.sha }}
+          delete-branch: true
