@@ -65,6 +65,7 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: mrkhadus/calculator-backend:${{ github.sha }}
+          cache-dir: ${{ runner.temp }}/trivy-cache
           format: table
           exit-code: "1"
           ignore-unfixed: true
@@ -75,6 +76,7 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: mrkhadus/calculator-frontend:${{ github.sha }}
+          cache-dir: ${{ runner.temp }}/trivy-cache
           format: table
           exit-code: "1"
           ignore-unfixed: true
@@ -101,6 +103,9 @@ jobs:
           sed -i "s|^\([[:space:]]*image:[[:space:]]*\)mrkhadus/calculator-backend[^[:space:]]*|\1mrkhadus/calculator-backend:${{ github.sha }}|" manifest/deployment.yaml
           sed -i "s|^\([[:space:]]*image:[[:space:]]*\)mrkhadus/calculator-frontend[^[:space:]]*|\1mrkhadus/calculator-frontend:${{ github.sha }}|" manifest/deployment.yaml
 
+      - name: Remove Trivy cache from workspace
+        if: github.event_name != 'pull_request'
+        run: rm -rf .cache/trivy
       - name: Create pull request for Argo CD
         if: github.event_name != 'pull_request'
         uses: peter-evans/create-pull-request@v7
@@ -119,4 +124,6 @@ jobs:
 
             Source commit: ${{ github.sha }}
           delete-branch: true
+
+
 
